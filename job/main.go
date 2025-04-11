@@ -37,6 +37,14 @@ func main() {
 			"See: " + docs +
 			"usage-examples/#environment-variable")
 	}
+	dbName := os.Getenv("MONGODB_DB_NAME")
+	if dbName == "" {
+		log.Fatal("Set the database name using 'MONGODB_DB_NAME' environment variable.")
+	}
+	collectionName := os.Getenv("MONGODB_COLLECTION")
+	if collectionName == "" {
+		log.Fatal("Set the collection name using 'MONGODB_COLLECTION' environment variable.")
+	}
 	client, err := mongo.Connect(options.Client().
 		ApplyURI(uri))
 	if err != nil {
@@ -47,7 +55,7 @@ func main() {
 			panic(err)
 		}
 	}()
-	collection := client.Database("exchange_db").Collection("rates")
+	collection := client.Database(dbName).Collection(collectionName)
 
 	req, err := http.NewRequest("GET", "https://www.sampath.lk/api/exchange-rates", nil)
 	if err != nil {

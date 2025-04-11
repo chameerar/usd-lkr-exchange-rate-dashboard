@@ -94,7 +94,7 @@ func latestRateHandler(c *gin.Context) {
 	err := collection.FindOne(
 		context.TODO(),
 		bson.M{},
-		options.FindOne().SetSort(bson.D{{"fetchedAt", -1}}),
+		options.FindOne().SetSort(bson.D{{Key: "fetchedAt", Value: -1}}),
 	).Decode(&result)
 
 	if err != nil {
@@ -108,7 +108,7 @@ func historyHandler(c *gin.Context) {
 	cursor, err := collection.Find(
 		context.TODO(),
 		bson.M{},
-		options.Find().SetSort(bson.D{{"fetchedAt", -1}}).SetLimit(7),
+		options.Find().SetSort(bson.D{{Key: "fetchedAt", Value: -1}}).SetLimit(7),
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch history"})
@@ -134,6 +134,15 @@ func main() {
 			"See: " + docs +
 			"usage-examples/#environment-variable")
 	}
+	dbName := os.Getenv("MONGODB_DB_NAME")
+	if dbName == "" {
+		log.Fatal("Set the database name using 'MONGODB_DB_NAME' environment variable.")
+	}
+	collectionName := os.Getenv("MONGODB_COLLECTION")
+	if collectionName == "" {
+		log.Fatal("Set the collection name using 'MONGODB_COLLECTION' environment variable.")
+	}
+
 	client, err := mongo.Connect(options.Client().
 		ApplyURI(uri))
 	if err != nil {
@@ -144,7 +153,7 @@ func main() {
 			panic(err)
 		}
 	}()
-	collection = client.Database("exchange_db").Collection("rates")
+	collection = client.Database(dbName).Collection(collectionName)
 	r := gin.New()
 
 	r.GET("/fetch-rate", fetchRateHandler)

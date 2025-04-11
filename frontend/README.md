@@ -1,54 +1,69 @@
-# React + TypeScript + Vite
+# 💻 USD LKR Exchange Rate Dashboard – Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is a simple React-based frontend application that visualizes the USD exchange rate fetched from the backend service. It fetches the last 7 recorded exchange rates and plots them in a line chart for easy tracking.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📦 Features
 
-## Expanding the ESLint configuration
+- Fetches historical USD exchange rates from the backend
+- Displays data on a responsive line chart using [Recharts](https://recharts.org/)
+- Clean and minimalistic UI
+- Footer with links to GitHub, LinkedIn, and Medium
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## 🛠️ Tech Stack
+
+- React (Vite)
+- TypeScript
+- Recharts
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/chameerar/usd-lkr-exchange-rate-dashboard.git
+cd usd-lkr-exchange-rate-dashboard/frontend
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Install dependencies
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```bash
+npm install
 ```
+
+### 3. Run the frontend
+
+```bash
+npm run dev
+```
+
+The app will be available at: `http://localhost:5173`
+
+---
+
+## 🔌 API Integration
+
+The frontend expects the backend to be running at:
+
+```
+http://localhost:8080
+```
+
+Make sure the backend is running and reachable. Update the API base URL in the `public/config.js` if needed
+
+---
+
+## 📸 Screenshot
+
+![Screenshot](./screenshot.png)
+
+---
+
+## 📜 License
+
+MIT – use freely and customize as needed.
