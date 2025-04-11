@@ -3,6 +3,8 @@ info:
   title: USD to LKR Exchange Rate API
   version: 1.0.0
   description: API to fetch current and historical exchange rates from USD to LKR.
+servers:
+  - url: http://localhost:8080
 paths:
   /fetch-rate:
     get:
