@@ -23,7 +23,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 function App() {
   const [latestRate, setLatestRate] = useState<ExchangeRate | null>(null);
   const [history, setHistory] = useState<ExchangeRate[]>([]);
-  const backendUrl = window.configs?.backendUrl ? window.configs.backendUrl : "/";
+  const backendUrl = window.configs.backendUrl;
 
   const fetchLatestRate = async () => {
     try {
