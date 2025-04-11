@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -148,13 +147,6 @@ func main() {
 	}()
 	collection = client.Database("exchange_db").Collection("rates")
 	r := gin.New()
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
-		AllowMethods:     []string{"GET", "POST"},
-		AllowHeaders:     []string{"Origin", "Content-Type"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-	}))
 
 	r.GET("/fetch-rate", fetchRateHandler)
 	r.GET("/latest-rate", latestRateHandler)
