@@ -30,7 +30,6 @@ type ApiResponse struct {
 type CurrencyEntry struct {
 	CurrCode string `json:"CurrCode"`
 	TTBUY    string `json:"TTBUY"`
-	// Add other fields if needed
 }
 
 var client *mongo.Client
