@@ -37,7 +37,7 @@ function App() {
   const fetchHistory = async () => {
     try {
       const res = await axios.get<ExchangeRate[]>(`${backendUrl}/history`);
-      setHistory(res.data);
+      setHistory(res.data.reverse());
     } catch (err) {
       console.error('Failed to fetch history:', err);
     }
