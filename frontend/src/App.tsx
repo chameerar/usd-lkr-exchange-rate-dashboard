@@ -10,15 +10,24 @@ interface ExchangeRate {
   fetchedAt: string;
 }
 
+declare global {
+  interface Window {
+    configs: {
+      backendUrl?: string;
+    }
+  }
+}
+
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 function App() {
   const [latestRate, setLatestRate] = useState<ExchangeRate | null>(null);
   const [history, setHistory] = useState<ExchangeRate[]>([]);
+  const backendUrl = window.configs?.backendUrl ? window.configs.backendUrl : "/";
 
   const fetchLatestRate = async () => {
     try {
-      const res = await axios.get<ExchangeRate>('http://localhost:8080/latest-rate');
+      const res = await axios.get<ExchangeRate>(`${backendUrl}/latest-rate`);
       setLatestRate(res.data);
     } catch (err) {
       console.error('Failed to fetch latest rate:', err);
@@ -27,7 +36,7 @@ function App() {
 
   const fetchHistory = async () => {
     try {
-      const res = await axios.get<ExchangeRate[]>('http://localhost:8080/history');
+      const res = await axios.get<ExchangeRate[]>(`${backendUrl}/history`);
       setHistory(res.data);
     } catch (err) {
       console.error('Failed to fetch history:', err);
