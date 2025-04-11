@@ -1,0 +1,60 @@
+openapi: 3.0.3
+info:
+  title: USD to LKR Exchange Rate API
+  version: 1.0.0
+  description: API to fetch current and historical exchange rates from USD to LKR.
+paths:
+  /fetch-rate:
+    get:
+      summary: Fetch current USD to LKR exchange rate
+      description: Returns the current exchange rate from USD to LKR.
+      responses:
+        '200':
+          description: Successful response with current exchange rate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rate:
+                    type: number
+                    example: 326.45
+  /latest-rate:
+    get:
+      summary: Get latest USD to LKR exchange rate
+      description: Returns the latest available exchange rate from USD to LKR.
+      responses:
+        '200':
+          description: Latest exchange rate response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  latest_rate:
+                    type: number
+                    example: 327.1
+  /history:
+    get:
+      summary: Get historical USD to LKR rates
+      description: Returns historical exchange rates for USD to LKR.
+      responses:
+        '200':
+          description: Historical rate data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                          example: '2025-04-01'
+                        rate:
+                          type: number
+                          example: 325.3
