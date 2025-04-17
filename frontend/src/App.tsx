@@ -55,7 +55,7 @@ function App() {
   const fetchHistory = async () => {
     try {
       const res = await axios.get<ExchangeRate[]>(`${backendUrl}/history`);
-      setHistory(res.data.reverse());
+      setHistory(res.data);
     } catch (err) {
       console.error("Failed to fetch history:", err);
     }
@@ -66,13 +66,14 @@ function App() {
     fetchHistory();
   }, []);
 
+  const chartHistory = history.slice().reverse(); 
   // Prepare chart data
   const chartData = {
-    labels: history.map((rate) => new Date(rate.fetchedAt).toLocaleString()),
+    labels: chartHistory.map((rate) => new Date(rate.fetchedAt).toLocaleString()),
     datasets: [
       {
         label: "USD to LKR Exchange Rate",
-        data: history.map((rate) => rate.rate),
+        data: chartHistory.map((rate) => rate.rate),
         borderColor: "rgb(75, 192, 192)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
         fill: true,
