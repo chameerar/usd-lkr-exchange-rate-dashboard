@@ -99,7 +99,7 @@ function App() {
         <p>Loading latest rate...</p>
       )}
 
-      <h2>History (Last 7 days)</h2>
+      <h2>History</h2>
       <ul>
         {history.map((rate, idx) => (
           <li key={idx}>
@@ -108,7 +108,7 @@ function App() {
         ))}
       </ul>
 
-      <h2>Exchange Rate Chart (Last 7 days)</h2>
+      <h2>Exchange Rate Chart</h2>
       <div style={{ width: "80%", height: "400px" }}>
         <Line data={chartData} />
       </div>
