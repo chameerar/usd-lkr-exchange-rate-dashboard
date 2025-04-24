@@ -1,4 +1,4 @@
-# 🕒 USD LKR Exchange Rate Dashboardr – Job
+# 🕒 USD LKR Exchange Rate Dashboard – Job
 
 This Go service is a scheduled job that fetches the USD exchange rate periodically from the [Sampath Bank Exchange Rates API](https://www.sampath.lk/api/exchange-rates) and stores the result in a MongoDB database.
 
@@ -8,7 +8,7 @@ This service is designed to be deployed as a cron job or periodic task in a Kube
 
 ## 📦 Features
 
-- Fetches the current USD exchange rate from Sampath Bank API
+- Fetches the current USD exchange rate from the Sampath Bank API
 - Extracts and parses the TTBUY rate for USD
 - Persists the rate with a timestamp to MongoDB
 - Logs success or error during operation
