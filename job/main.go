@@ -14,6 +14,16 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
+// Bank name constants
+const (
+	BankSampath    = "SAMPATH"
+	BankCommercial = "COMMERCIAL"
+	BankHNB        = "HNB"
+	BankNSB        = "NSB"
+	BankSeylan     = "SEYLAN"
+	BankNation     = "NATION"
+)
+
 type ExchangeRate struct {
 	Rate      float64   `bson:"rate" json:"rate"`
 	FetchedAt time.Time `bson:"fetchedAt" json:"fetchedAt"`
@@ -50,7 +60,7 @@ func NewSampathExtractor() *SampathExtractor {
 }
 
 func (s *SampathExtractor) GetBankName() string {
-	return "SAMPATH"
+	return BankSampath
 }
 
 func (s *SampathExtractor) ExtractUSDRate() (float64, error) {
@@ -107,7 +117,7 @@ func NewComBankExtractor() *ComBankExtractor {
 }
 
 func (c *ComBankExtractor) GetBankName() string {
-	return "COMMERCIAL"
+	return BankCommercial
 }
 
 func (c *ComBankExtractor) ExtractUSDRate() (float64, error) {
