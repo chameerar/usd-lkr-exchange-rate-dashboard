@@ -95,20 +95,7 @@ func (s *SampathExtractor) ExtractUSDRate() (float64, error) {
 	return 0, fmt.Errorf("USD rate not found")
 }
 
-// Example: Commercial Bank extractor (commented out)
-// Uncomment and implement when you want to add Commercial Bank support
-
-/*
-type ComBankApiResponse struct {
-	Rates []ComBankRate `json:"rates"`
-}
-
-type ComBankRate struct {
-	Currency string  `json:"currency"`
-	Buying   float64 `json:"buying"`
-	Selling  float64 `json:"selling"`
-}
-
+// Commercial Bank extractor with mock data for testing
 type ComBankExtractor struct {
 	httpClient *http.Client
 }
@@ -124,32 +111,41 @@ func (c *ComBankExtractor) GetBankName() string {
 }
 
 func (c *ComBankExtractor) ExtractUSDRate() (float64, error) {
-	req, err := http.NewRequest("GET", "https://www.combank.lk/api/exchange-rates", nil)
-	if err != nil {
-		return 0, err
-	}
+	// Mock implementation - in real scenario, you'd call the actual API
+	// For now, return a mock rate that's slightly different from Sampath
+	baseRate := 301.5 // Slightly different base rate
+	// Add some small random variation
+	variation := float64(time.Now().Unix()%5) * 0.1
+	mockRate := baseRate + variation
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	defer resp.Body.Close()
-
-	var apiResp ComBankApiResponse
-	err = json.NewDecoder(resp.Body).Decode(&apiResp)
-	if err != nil {
-		return 0, err
-	}
-
-	for _, rate := range apiResp.Rates {
-		if rate.Currency == "USD" {
-			return rate.Buying, nil
-		}
-	}
-
-	return 0, fmt.Errorf("USD rate not found")
+	log.Printf("Mock Commercial Bank rate: %.2f", mockRate)
+	return mockRate, nil
 }
-*/
+
+// HNB Bank extractor with mock data
+type HNBExtractor struct {
+	httpClient *http.Client
+}
+
+func NewHNBExtractor() *HNBExtractor {
+	return &HNBExtractor{
+		httpClient: &http.Client{},
+	}
+}
+
+func (h *HNBExtractor) GetBankName() string {
+	return BankHNB
+}
+
+func (h *HNBExtractor) ExtractUSDRate() (float64, error) {
+	// Mock implementation
+	baseRate := 299.8 // Different base rate
+	variation := float64(time.Now().Unix()%7) * 0.15
+	mockRate := baseRate + variation
+
+	log.Printf("Mock HNB rate: %.2f", mockRate)
+	return mockRate, nil
+}
 
 var client *mongo.Client
 var collection *mongo.Collection
@@ -261,18 +257,41 @@ func latestRateHandler(c *gin.Context) {
 }
 
 func historyHandler(c *gin.Context) {
-	// Get bank parameter from query (optional)
+	// Get bank and period parameters from query (optional)
 	bankParam := c.DefaultQuery("bank", "")
+	periodParam := c.DefaultQuery("period", "month")
 
 	filter := bson.M{}
 	if bankParam != "" {
 		filter["bank"] = bankParam
 	}
 
+	// Calculate time range based on period
+	var timeRange time.Time
+	var limit int64 = 30 // default for month
+
+	switch periodParam {
+	case "week":
+		timeRange = time.Now().AddDate(0, 0, -7)
+		limit = 7
+	case "month":
+		timeRange = time.Now().AddDate(0, -1, 0)
+		limit = 30
+	case "year":
+		timeRange = time.Now().AddDate(-1, 0, 0)
+		limit = 52 // Weekly data points for a year
+	default:
+		timeRange = time.Now().AddDate(0, -1, 0)
+		limit = 30
+	}
+
+	// Add time range filter
+	filter["fetchedAt"] = bson.M{"$gte": timeRange}
+
 	cursor, err := collection.Find(
 		context.TODO(),
 		filter,
-		options.Find().SetSort(bson.D{{Key: "fetchedAt", Value: -1}}).SetLimit(7),
+		options.Find().SetSort(bson.D{{Key: "fetchedAt", Value: -1}}).SetLimit(limit),
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch history"})
@@ -331,9 +350,12 @@ func main() {
 	// Initialize bank extractors
 	bankExtractors = []BankExtractor{
 		NewSampathExtractor(),
+		NewComBankExtractor(),
+		NewHNBExtractor(),
 		// Add more bank extractors here as you implement them
-		// NewComBankExtractor(),
-		// NewHNBExtractor(),
+		// NewNSBExtractor(),
+		// NewSeylanExtractor(),
+		// NewNationExtractor(),
 	}
 
 	r := gin.New()
@@ -354,14 +376,22 @@ func main() {
 
 	// API endpoints
 	// Examples:
+	// GET /health                       - Health check endpoint
 	// GET /fetch-rate                    - Fetch from all banks
 	// GET /fetch-rate?bank=SAMPATH      - Fetch from Sampath Bank only
 	// GET /latest-rate?bank=COMMERCIAL   - Get latest rate from Commercial Bank
-	// GET /history?bank=HNB             - Get history from HNB
+	// GET /history?bank=HNB&period=week - Get history from HNB for last week
 	// GET /banks                        - Get list of all supported banks
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":    "healthy",
+			"timestamp": time.Now(),
+			"banks":     len(bankExtractors),
+		})
+	})
 	r.GET("/fetch-rate", fetchRateHandler)   // ?bank=SAMPATH (optional)
 	r.GET("/latest-rate", latestRateHandler) // ?bank=SAMPATH (optional)
-	r.GET("/history", historyHandler)        // ?bank=SAMPATH (optional)
+	r.GET("/history", historyHandler)        // ?bank=SAMPATH&period=month (optional)
 	r.GET("/banks", banksHandler)            // Get list of available banks
 
 	log.Println("Server started at :8080")

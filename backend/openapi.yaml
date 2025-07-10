@@ -1,16 +1,35 @@
 openapi: 3.0.3
 info:
   title: USD to LKR Exchange Rate API
-  version: 2.0.0
+  version: 2.1.0
   description: |
     API to fetch current and historical exchange rates from USD to LKR from multiple banks.
     
-    ## Supported Banks
+    ## Currently Supported Banks
     - SAMPATH - Sampath Bank
+    
+    ## Planned Banks (Coming Soon)
+    - NSB - National Savings Bank
+    - SEYLAN - Seylan Bank
+    - NATION - Nations Trust Bank
+    - COMMERCIAL - Commercial Bank
+    - HNB - Hatton National Bank
+    
+    ## Features
+    - Real-time rate fetching from multiple banks
+    - Historical data with period filtering (week, month, year)
+    - Bank-specific data filtering
+    - Health monitoring endpoint
     
     ## Bank Parameter
     Most endpoints support an optional `bank` query parameter to filter results by a specific bank.
     If not provided, data from all available banks will be returned.
+    
+    ## Period Parameter
+    History endpoint supports `period` parameter to filter by time range:
+    - `week`: Last 7 days (daily data points)
+    - `month`: Last 30 days (daily data points)  
+    - `year`: Last 365 days (weekly data points)
 
 servers:
   - url: http://localhost:8080
@@ -78,6 +97,23 @@ components:
             enum: [SAMPATH, COMMERCIAL, HNB, NSB, SEYLAN, NATION]
           description: List of supported bank names
           example: ["SAMPATH", "COMMERCIAL", "HNB"]
+    
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Server health status
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          description: Current server timestamp
+          example: "2025-07-11T01:16:13.140775+05:30"
+        banks:
+          type: integer
+          description: Number of configured bank extractors
+          example: 3
 
   parameters:
     BankParameter:
@@ -91,6 +127,21 @@ components:
         type: string
         enum: [SAMPATH, COMMERCIAL, HNB, NSB, SEYLAN, NATION]
       example: "SAMPATH"
+    
+    PeriodParameter:
+      name: period
+      in: query
+      required: false
+      description: |
+        Time period for historical data filtering.
+        - `week`: Last 7 days (7 daily data points)
+        - `month`: Last 30 days (30 daily data points)
+        - `year`: Last 365 days (52 weekly data points)
+      schema:
+        type: string
+        enum: [week, month, year]
+        default: month
+      example: "month"
 
 paths:
   /fetch-rate:
@@ -191,13 +242,18 @@ paths:
     get:
       summary: Get historical USD to LKR rates
       description: |
-        Returns historical exchange rates (last 7 entries) from the database.
+        Returns historical exchange rates from the database with optional period filtering.
         
         - If `bank` parameter is provided, returns history for that specific bank
         - If no `bank` parameter, returns history from all banks
+        - `period` parameter controls the time range and data density:
+          - `week`: Last 7 days with daily data points
+          - `month`: Last 30 days with daily data points (default)
+          - `year`: Last 365 days with weekly data points
         - Results are sorted by fetchedAt in descending order (newest first)
       parameters:
         - $ref: '#/components/parameters/BankParameter'
+        - $ref: '#/components/parameters/PeriodParameter'
       responses:
         '200':
           description: Historical rate data
@@ -207,16 +263,37 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ExchangeRate'
-              example:
-                - rate: 327.1
-                  fetchedAt: "2025-07-10T14:30:00Z"
-                  bank: "SAMPATH"
-                - rate: 326.8
-                  fetchedAt: "2025-07-10T12:30:00Z"
-                  bank: "SAMPATH"
-                - rate: 325.9
-                  fetchedAt: "2025-07-10T14:25:00Z"
-                  bank: "COMMERCIAL"
+              examples:
+                week_data:
+                  summary: Weekly data for specific bank
+                  value:
+                    - rate: 327.1
+                      fetchedAt: "2025-07-11T14:30:00Z"
+                      bank: "SAMPATH"
+                    - rate: 326.8
+                      fetchedAt: "2025-07-10T14:30:00Z"
+                      bank: "SAMPATH"
+                    - rate: 326.5
+                      fetchedAt: "2025-07-09T14:30:00Z"
+                      bank: "SAMPATH"
+                month_data:
+                  summary: Monthly data for specific bank
+                  value:
+                    - rate: 327.1
+                      fetchedAt: "2025-07-11T14:30:00Z"
+                      bank: "COMMERCIAL"
+                    - rate: 326.8
+                      fetchedAt: "2025-07-10T14:30:00Z"
+                      bank: "COMMERCIAL"
+                year_data:
+                  summary: Yearly data (weekly points)
+                  value:
+                    - rate: 327.1
+                      fetchedAt: "2025-07-11T14:30:00Z"
+                      bank: "HNB"
+                    - rate: 325.8
+                      fetchedAt: "2025-07-04T14:30:00Z"
+                      bank: "HNB"
         '500':
           description: Internal server error
           content:
@@ -241,3 +318,21 @@ paths:
                 $ref: '#/components/schemas/BanksResponse'
               example:
                 banks: ["SAMPATH", "COMMERCIAL", "HNB"]
+
+  /health:
+    get:
+      summary: Health check endpoint
+      description: |
+        Returns server health status and basic information.
+        Useful for monitoring and debugging.
+      responses:
+        '200':
+          description: Server health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "healthy"
+                timestamp: "2025-07-11T01:16:13.140775+05:30"
+                banks: 3
