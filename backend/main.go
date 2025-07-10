@@ -259,7 +259,7 @@ func latestRateHandler(c *gin.Context) {
 func historyHandler(c *gin.Context) {
 	// Get bank and period parameters from query (optional)
 	bankParam := c.DefaultQuery("bank", "")
-	periodParam := c.DefaultQuery("period", "month")
+	periodParam := c.DefaultQuery("period", "week")
 
 	filter := bson.M{}
 	if bankParam != "" {
@@ -281,8 +281,8 @@ func historyHandler(c *gin.Context) {
 		timeRange = time.Now().AddDate(-1, 0, 0)
 		limit = 52 // Weekly data points for a year
 	default:
-		timeRange = time.Now().AddDate(0, -1, 0)
-		limit = 30
+		timeRange = time.Now().AddDate(0, 0, -7)
+		limit = 7
 	}
 
 	// Add time range filter
@@ -350,8 +350,8 @@ func main() {
 	// Initialize bank extractors
 	bankExtractors = []BankExtractor{
 		NewSampathExtractor(),
-		NewComBankExtractor(),
-		NewHNBExtractor(),
+		// NewComBankExtractor(),
+		// NewHNBExtractor(),
 		// Add more bank extractors here as you implement them
 		// NewNSBExtractor(),
 		// NewSeylanExtractor(),
