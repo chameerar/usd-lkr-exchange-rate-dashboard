@@ -1,62 +1,243 @@
 openapi: 3.0.3
 info:
   title: USD to LKR Exchange Rate API
-  version: 1.0.0
-  description: API to fetch current and historical exchange rates from USD to LKR.
+  version: 2.0.0
+  description: |
+    API to fetch current and historical exchange rates from USD to LKR from multiple banks.
+    
+    ## Supported Banks
+    - SAMPATH - Sampath Bank
+    
+    ## Bank Parameter
+    Most endpoints support an optional `bank` query parameter to filter results by a specific bank.
+    If not provided, data from all available banks will be returned.
+
 servers:
   - url: http://localhost:8080
+    description: Local development server
+
+
+components:
+  schemas:
+    ExchangeRate:
+      type: object
+      required:
+        - rate
+        - fetchedAt
+        - bank
+      properties:
+        rate:
+          type: number
+          format: float
+          description: Exchange rate from USD to LKR
+          example: 326.45
+        fetchedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the rate was fetched
+          example: "2025-07-10T14:30:00Z"
+        bank:
+          type: string
+          description: Bank name (constant)
+          enum: [SAMPATH, COMMERCIAL, HNB, NSB, SEYLAN, NATION]
+          example: "SAMPATH"
+    
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Bank not supported: INVALID"
+        details:
+          type: array
+          items:
+            type: string
+          description: Additional error details
+    
+    FetchRatesResponse:
+      type: object
+      properties:
+        rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExchangeRate'
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Warnings for failed bank extractions (only present if some banks failed)
+    
+    BanksResponse:
+      type: object
+      properties:
+        banks:
+          type: array
+          items:
+            type: string
+            enum: [SAMPATH, COMMERCIAL, HNB, NSB, SEYLAN, NATION]
+          description: List of supported bank names
+          example: ["SAMPATH", "COMMERCIAL", "HNB"]
+
+  parameters:
+    BankParameter:
+      name: bank
+      in: query
+      required: false
+      description: |
+        Optional bank name to filter results. 
+        Must be one of the supported bank constants: SAMPATH, COMMERCIAL, HNB, NSB, SEYLAN, NATION
+      schema:
+        type: string
+        enum: [SAMPATH, COMMERCIAL, HNB, NSB, SEYLAN, NATION]
+      example: "SAMPATH"
+
 paths:
   /fetch-rate:
     get:
       summary: Fetch current USD to LKR exchange rate
-      description: Returns the current exchange rate from USD to LKR.
+      description: |
+        Fetches current exchange rates from banks and stores them in the database.
+        
+        - If `bank` parameter is provided, fetches from that specific bank only
+        - If no `bank` parameter, fetches from all available banks
+        - Returns single rate object for specific bank, array for multiple banks
+      parameters:
+        - $ref: '#/components/parameters/BankParameter'
       responses:
         '200':
-          description: Successful response with current exchange rate
+          description: Successful response with current exchange rate(s)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  rate:
-                    type: number
-                    example: 326.45
+                oneOf:
+                  - $ref: '#/components/schemas/ExchangeRate'
+                  - $ref: '#/components/schemas/FetchRatesResponse'
+              examples:
+                single_bank:
+                  summary: Response for specific bank
+                  value:
+                    rate: 326.45
+                    fetchedAt: "2025-07-10T14:30:00Z"
+                    bank: "SAMPATH"
+                multiple_banks:
+                  summary: Response for all banks
+                  value:
+                    rates:
+                      - rate: 326.45
+                        fetchedAt: "2025-07-10T14:30:00Z"
+                        bank: "SAMPATH"
+                      - rate: 325.80
+                        fetchedAt: "2025-07-10T14:30:15Z"
+                        bank: "COMMERCIAL"
+                    warnings:
+                      - "Error fetching rate from HNB: connection timeout"
+        '400':
+          description: Bad request - invalid bank parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Bank not supported: INVALID"
+        '500':
+          description: Internal server error - failed to fetch rates from any bank
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Failed to fetch rates from any bank"
+                details:
+                  - "Error fetching rate from SAMPATH: API unavailable"
+                  - "Error inserting rate for COMMERCIAL to DB: connection failed"
   /latest-rate:
     get:
       summary: Get latest USD to LKR exchange rate
-      description: Returns the latest available exchange rate from USD to LKR.
+      description: |
+        Returns the latest available exchange rate from the database.
+        
+        - If `bank` parameter is provided, returns latest rate for that specific bank
+        - If no `bank` parameter, returns the latest rate from any bank
+      parameters:
+        - $ref: '#/components/parameters/BankParameter'
       responses:
         '200':
           description: Latest exchange rate response
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  latest_rate:
-                    type: number
-                    example: 327.1
+                $ref: '#/components/schemas/ExchangeRate'
+              example:
+                rate: 327.1
+                fetchedAt: "2025-07-10T14:30:00Z"
+                bank: "SAMPATH"
+        '404':
+          description: No rates found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                no_rates_for_bank:
+                  summary: No rates for specific bank
+                  value:
+                    error: "No rates found for bank: COMMERCIAL"
+                no_rates_at_all:
+                  summary: No rates found at all
+                  value:
+                    error: "No rates found"
   /history:
     get:
       summary: Get historical USD to LKR rates
-      description: Returns historical exchange rates for USD to LKR.
+      description: |
+        Returns historical exchange rates (last 7 entries) from the database.
+        
+        - If `bank` parameter is provided, returns history for that specific bank
+        - If no `bank` parameter, returns history from all banks
+        - Results are sorted by fetchedAt in descending order (newest first)
+      parameters:
+        - $ref: '#/components/parameters/BankParameter'
       responses:
         '200':
           description: Historical rate data
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  rates:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        date:
-                          type: string
-                          format: date
-                          example: '2025-04-01'
-                        rate:
-                          type: number
-                          example: 325.3
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExchangeRate'
+              example:
+                - rate: 327.1
+                  fetchedAt: "2025-07-10T14:30:00Z"
+                  bank: "SAMPATH"
+                - rate: 326.8
+                  fetchedAt: "2025-07-10T12:30:00Z"
+                  bank: "SAMPATH"
+                - rate: 325.9
+                  fetchedAt: "2025-07-10T14:25:00Z"
+                  bank: "COMMERCIAL"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Failed to fetch history"
+
+  /banks:
+    get:
+      summary: Get list of supported banks
+      description: |
+        Returns a list of all supported bank names (constants).
+        Useful for frontend applications to populate bank selection dropdowns.
+      responses:
+        '200':
+          description: List of supported banks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BanksResponse'
+              example:
+                banks: ["SAMPATH", "COMMERCIAL", "HNB"]
