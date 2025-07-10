@@ -7,11 +7,6 @@ info:
     
     ## Supported Banks
     - SAMPATH - Sampath Bank
-    - COMMERCIAL - Commercial Bank
-    - HNB - Hatton National Bank
-    - NSB - National Savings Bank
-    - SEYLAN - Seylan Bank
-    - NATION - Nations Trust Bank
     
     ## Bank Parameter
     Most endpoints support an optional `bank` query parameter to filter results by a specific bank.
@@ -20,8 +15,7 @@ info:
 servers:
   - url: http://localhost:8080
     description: Local development server
-  - url: https://api.example.com
-    description: Production server
+
 
 components:
   schemas:
