@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -16,98 +17,261 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
+// Bank name constants
+const (
+	BankSampath    = "SAMPATH"
+	BankCommercial = "COMMERCIAL"
+	BankHNB        = "HNB"
+	BankNSB        = "NSB"
+	BankSeylan     = "SEYLAN"
+	BankNation     = "NATION"
+)
+
 type ExchangeRate struct {
 	Rate      float64   `bson:"rate" json:"rate"`
 	FetchedAt time.Time `bson:"fetchedAt" json:"fetchedAt"`
+	Bank      string    `bson:"bank" json:"bank"`
 }
 
-type ApiResponse struct {
-	Success     bool            `json:"success"`
-	Description string          `json:"description"`
-	Data        []CurrencyEntry `json:"data"`
+// BankExtractor interface for extracting exchange rates from different banks
+type BankExtractor interface {
+	GetBankName() string
+	ExtractUSDRate() (float64, error)
 }
 
-type CurrencyEntry struct {
+// Sampath Bank structures
+type SampathApiResponse struct {
+	Success     bool                   `json:"success"`
+	Description string                 `json:"description"`
+	Data        []SampathCurrencyEntry `json:"data"`
+}
+
+type SampathCurrencyEntry struct {
 	CurrCode string `json:"CurrCode"`
 	TTBUY    string `json:"TTBUY"`
 }
 
-var client *mongo.Client
-var collection *mongo.Collection
+// SampathExtractor implements BankExtractor for Sampath Bank
+type SampathExtractor struct {
+	httpClient *http.Client
+}
 
-func fetchRateHandler(c *gin.Context) {
+func NewSampathExtractor() *SampathExtractor {
+	return &SampathExtractor{
+		httpClient: &http.Client{},
+	}
+}
+
+func (s *SampathExtractor) GetBankName() string {
+	return BankSampath
+}
+
+func (s *SampathExtractor) ExtractUSDRate() (float64, error) {
 	req, err := http.NewRequest("GET", "https://www.sampath.lk/api/exchange-rates", nil)
 	if err != nil {
-		log.Println("Error creating request:", err)
-		return
+		return 0, err
 	}
 
-	// Add User-Agent header
 	req.Header.Set("User-Agent", "My Custom User Agent")
 
-	// Send the request using the default client
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		log.Println("Error sending request:", err)
-		return
+		return 0, err
 	}
-
 	defer resp.Body.Close()
 
-	var apiResp ApiResponse
-
+	var apiResp SampathApiResponse
 	err = json.NewDecoder(resp.Body).Decode(&apiResp)
 	if err != nil || !apiResp.Success {
-		log.Println("Error parsing ", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode API response"})
-		return
+		return 0, err
 	}
 
-	var usdRate float64
 	for _, entry := range apiResp.Data {
 		if entry.CurrCode == "USD" {
-			usdRate, err = strconv.ParseFloat(entry.TTBUY, 64)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid rate format"})
-				return
-			}
-			break
+			return strconv.ParseFloat(entry.TTBUY, 64)
 		}
 	}
 
-	rate := ExchangeRate{
-		Rate:      usdRate,
-		FetchedAt: time.Now(),
+	return 0, fmt.Errorf("USD rate not found")
+}
+
+// Example: Commercial Bank extractor (commented out)
+// Uncomment and implement when you want to add Commercial Bank support
+
+/*
+type ComBankApiResponse struct {
+	Rates []ComBankRate `json:"rates"`
+}
+
+type ComBankRate struct {
+	Currency string  `json:"currency"`
+	Buying   float64 `json:"buying"`
+	Selling  float64 `json:"selling"`
+}
+
+type ComBankExtractor struct {
+	httpClient *http.Client
+}
+
+func NewComBankExtractor() *ComBankExtractor {
+	return &ComBankExtractor{
+		httpClient: &http.Client{},
 	}
-	_, err = collection.InsertOne(context.TODO(), rate)
+}
+
+func (c *ComBankExtractor) GetBankName() string {
+	return BankCommercial
+}
+
+func (c *ComBankExtractor) ExtractUSDRate() (float64, error) {
+	req, err := http.NewRequest("GET", "https://www.combank.lk/api/exchange-rates", nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB insert failed"})
+		return 0, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	var apiResp ComBankApiResponse
+	err = json.NewDecoder(resp.Body).Decode(&apiResp)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, rate := range apiResp.Rates {
+		if rate.Currency == "USD" {
+			return rate.Buying, nil
+		}
+	}
+
+	return 0, fmt.Errorf("USD rate not found")
+}
+*/
+
+var client *mongo.Client
+var collection *mongo.Collection
+
+// Initialize bank extractors
+var bankExtractors []BankExtractor
+
+func fetchRateHandler(c *gin.Context) {
+	// Get bank parameter from query (optional, defaults to all banks)
+	bankParam := c.DefaultQuery("bank", "")
+
+	var extractorsToProcess []BankExtractor
+
+	if bankParam != "" {
+		// Find specific bank extractor
+		for _, extractor := range bankExtractors {
+			if extractor.GetBankName() == bankParam {
+				extractorsToProcess = append(extractorsToProcess, extractor)
+				break
+			}
+		}
+		if len(extractorsToProcess) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Bank not supported: " + bankParam})
+			return
+		}
+	} else {
+		// Process all banks
+		extractorsToProcess = bankExtractors
+	}
+
+	var rates []ExchangeRate
+	var errors []string
+
+	// Process each bank
+	for _, extractor := range extractorsToProcess {
+		log.Printf("Fetching exchange rate from %s...", extractor.GetBankName())
+
+		usdRate, err := extractor.ExtractUSDRate()
+		if err != nil {
+			errorMsg := fmt.Sprintf("Error fetching rate from %s: %v", extractor.GetBankName(), err)
+			log.Println(errorMsg)
+			errors = append(errors, errorMsg)
+			continue
+		}
+
+		rate := ExchangeRate{
+			Rate:      usdRate,
+			FetchedAt: time.Now(),
+			Bank:      extractor.GetBankName(),
+		}
+
+		_, err = collection.InsertOne(context.TODO(), rate)
+		if err != nil {
+			errorMsg := fmt.Sprintf("Error inserting rate for %s to DB: %v", extractor.GetBankName(), err)
+			log.Println(errorMsg)
+			errors = append(errors, errorMsg)
+			continue
+		}
+
+		rates = append(rates, rate)
+		log.Printf("Successfully fetched and added rate for %s: %v", extractor.GetBankName(), rate)
+	}
+
+	if len(rates) == 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to fetch rates from any bank",
+			"details": errors,
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, rate)
+	// Return single rate if only one bank was processed, otherwise return array
+	if len(rates) == 1 && bankParam != "" {
+		c.JSON(http.StatusOK, rates[0])
+	} else {
+		response := gin.H{"rates": rates}
+		if len(errors) > 0 {
+			response["warnings"] = errors
+		}
+		c.JSON(http.StatusOK, response)
+	}
 }
 
 func latestRateHandler(c *gin.Context) {
+	// Get bank parameter from query (optional)
+	bankParam := c.DefaultQuery("bank", "")
+
+	filter := bson.M{}
+	if bankParam != "" {
+		filter["bank"] = bankParam
+	}
+
 	var result ExchangeRate
 	err := collection.FindOne(
 		context.TODO(),
-		bson.M{},
+		filter,
 		options.FindOne().SetSort(bson.D{{Key: "fetchedAt", Value: -1}}),
 	).Decode(&result)
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
+		if bankParam != "" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No rates found for bank: " + bankParam})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No rates found"})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, result)
 }
 
 func historyHandler(c *gin.Context) {
+	// Get bank parameter from query (optional)
+	bankParam := c.DefaultQuery("bank", "")
+
+	filter := bson.M{}
+	if bankParam != "" {
+		filter["bank"] = bankParam
+	}
+
 	cursor, err := collection.Find(
 		context.TODO(),
-		bson.M{},
+		filter,
 		options.Find().SetSort(bson.D{{Key: "fetchedAt", Value: -1}}).SetLimit(7),
 	)
 	if err != nil {
@@ -124,6 +288,15 @@ func historyHandler(c *gin.Context) {
 		}
 	}
 	c.JSON(http.StatusOK, rates)
+}
+
+// New endpoint to get available banks
+func banksHandler(c *gin.Context) {
+	banks := make([]string, len(bankExtractors))
+	for i, extractor := range bankExtractors {
+		banks[i] = extractor.GetBankName()
+	}
+	c.JSON(http.StatusOK, gin.H{"banks": banks})
 }
 
 func main() {
@@ -154,12 +327,78 @@ func main() {
 		}
 	}()
 	collection = client.Database(dbName).Collection(collectionName)
+
+	// Initialize bank extractors
+	bankExtractors = []BankExtractor{
+		NewSampathExtractor(),
+		// Add more bank extractors here as you implement them
+		// NewComBankExtractor(),
+		// NewHNBExtractor(),
+	}
+
 	r := gin.New()
 
-	r.GET("/fetch-rate", fetchRateHandler)
-	r.GET("/latest-rate", latestRateHandler)
-	r.GET("/history", historyHandler)
+	// Enable CORS for frontend integration
+	r.Use(func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	})
+
+	// API endpoints
+	// Examples:
+	// GET /fetch-rate                    - Fetch from all banks
+	// GET /fetch-rate?bank=SAMPATH      - Fetch from Sampath Bank only
+	// GET /latest-rate?bank=COMMERCIAL   - Get latest rate from Commercial Bank
+	// GET /history?bank=HNB             - Get history from HNB
+	// GET /banks                        - Get list of all supported banks
+	r.GET("/fetch-rate", fetchRateHandler)   // ?bank=SAMPATH (optional)
+	r.GET("/latest-rate", latestRateHandler) // ?bank=SAMPATH (optional)
+	r.GET("/history", historyHandler)        // ?bank=SAMPATH (optional)
+	r.GET("/banks", banksHandler)            // Get list of available banks
 
 	log.Println("Server started at :8080")
+	log.Printf("Available banks: %v", getBankNames())
 	r.Run(":8080")
+}
+
+// Helper function to get bank names for logging
+func getBankNames() []string {
+	names := make([]string, len(bankExtractors))
+	for i, extractor := range bankExtractors {
+		names[i] = extractor.GetBankName()
+	}
+	return names
+}
+
+// Helper function to check if a bank name is valid
+func isValidBankName(bankName string) bool {
+	validBanks := map[string]bool{
+		BankSampath:    true,
+		BankCommercial: true,
+		BankHNB:        true,
+		BankNSB:        true,
+		BankSeylan:     true,
+		BankNation:     true,
+	}
+	return validBanks[bankName]
+}
+
+// Helper function to get all supported bank names
+func getAllSupportedBanks() []string {
+	return []string{
+		BankSampath,
+		BankCommercial,
+		BankHNB,
+		BankNSB,
+		BankSeylan,
+		BankNation,
+	}
 }
