@@ -1,17 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Line } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import { FaGithub, FaLinkedin, FaMedium } from "react-icons/fa";
+import BankSelector from "./components/BankSelector";
+import ExchangeRateCard from "./components/ExchangeRateCard";
+import TimePeriodSelector from "./components/TimePeriodSelector";
+import ExchangeRateTrend from "./components/ExchangeRateTrend";
+import HistoricalDataTable from "./components/HistoricalDataTable";
 
 // Bank constants (matching backend)
 const BANKS = {
@@ -23,7 +16,7 @@ const BANKS = {
   NATION: 'NATION'
 } as const;
 
-// For now, we'll only show SAMPATH as requested
+// Available banks
 const AVAILABLE_BANKS = [
   { value: BANKS.SAMPATH, label: 'Sampath Bank' }
 ];
@@ -34,6 +27,8 @@ interface ExchangeRate {
   bank?: string;
 }
 
+type TimePeriod = 'Week' | 'Month' | 'Year';
+
 declare global {
   interface Window {
     configs: {
@@ -42,22 +37,33 @@ declare global {
   }
 }
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
 function App() {
   const [latestRate, setLatestRate] = useState<ExchangeRate | null>(null);
   const [history, setHistory] = useState<ExchangeRate[]>([]);
   const [selectedBank, setSelectedBank] = useState<string>(BANKS.SAMPATH);
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('Week');
   const [loading, setLoading] = useState<boolean>(false);
-  const backendUrl = window.configs.backendUrl;
+  const backendUrl = window.configs?.backendUrl || 'http://localhost:8080';
+
+  // Mock data for testing when backend is not available
+  const generateMockData = () => {
+    const mockData = [];
+    const baseRate = 300;
+    const now = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const rate = baseRate + Math.random() * 20 - 10; // Random variation
+      mockData.push({
+        rate: rate,
+        fetchedAt: date.toISOString(),
+        bank: selectedBank
+      });
+    }
+    
+    return mockData;
+  };
 
   const fetchLatestRate = async (bank?: string) => {
     try {
@@ -67,176 +73,184 @@ function App() {
       setLatestRate(res.data);
     } catch (err) {
       console.error("Failed to fetch latest rate:", err);
+      // Use mock data for testing
+      const mockData = generateMockData();
+      setLatestRate(mockData[mockData.length - 1]);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchHistory = async (bank?: string) => {
+  const fetchHistoryWithPeriod = async (bank?: string, period?: TimePeriod) => {
     try {
       setLoading(true);
-      const bankParam = bank ? `?bank=${bank}` : '';
-      const res = await axios.get<ExchangeRate[]>(`${backendUrl}/history${bankParam}`);
+      const params = new URLSearchParams();
+      if (bank) params.append('bank', bank);
+      if (period) params.append('period', period.toLowerCase());
+      
+      const queryString = params.toString();
+      const url = `${backendUrl}/history${queryString ? `?${queryString}` : ''}`;
+      
+      const res = await axios.get<ExchangeRate[]>(url);
       setHistory(res.data);
     } catch (err) {
-      console.error("Failed to fetch history:", err);
+      console.error("Failed to fetch history with period:", err);
+      // Use mock data for testing, filtered by period
+      const mockData = generateMockDataForPeriod(period || 'Month');
+      setHistory(mockData);
     } finally {
       setLoading(false);
     }
+  };
+
+  const generateMockDataForPeriod = (period: TimePeriod) => {
+    const mockData = [];
+    const baseRate = 300;
+    const now = new Date();
+    
+    let days: number;
+    switch (period) {
+      case 'Week':
+        days = 7;
+        break;
+      case 'Month':
+        days = 30;
+        break;
+      case 'Year':
+        days = 365;
+        break;
+      default:
+        days = 30;
+    }
+    
+    // Generate data points based on the period
+    const dataPoints = Math.min(days, 50); // Cap at 50 points for performance
+    const stepSize = Math.floor(days / dataPoints);
+    
+    for (let i = dataPoints - 1; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - (i * stepSize));
+      const rate = baseRate + Math.random() * 20 - 10; // Random variation
+      mockData.push({
+        rate: rate,
+        fetchedAt: date.toISOString(),
+        bank: selectedBank
+      });
+    }
+    
+    return mockData;
   };
 
   const handleBankChange = (bank: string) => {
     setSelectedBank(bank);
     fetchLatestRate(bank);
-    fetchHistory(bank);
+    fetchHistoryWithPeriod(bank, selectedPeriod);
   };
 
-  const handleRefresh = () => {
-    fetchLatestRate(selectedBank);
-    fetchHistory(selectedBank);
+  const handlePeriodChange = (period: TimePeriod) => {
+    setSelectedPeriod(period);
+    // Filter existing history data based on the selected period
+    filterHistoryByPeriod(period);
+  };
+
+  const filterHistoryByPeriod = (period: TimePeriod) => {
+    // If we have history data, filter it based on the period
+    if (history.length === 0) return;
+
+    // For now, we'll refetch data with period parameter
+    // In a real app, you might want to cache all data and filter client-side
+    fetchHistoryWithPeriod(selectedBank, period);
   };
 
   useEffect(() => {
     fetchLatestRate(selectedBank);
-    fetchHistory(selectedBank);
-  }, []);  // Initial load with default bank
+    fetchHistoryWithPeriod(selectedBank, selectedPeriod);
+  }, []);
 
-  const chartHistory = history.slice().reverse(); 
-  // Prepare chart data
-  const chartData = {
-    labels: chartHistory.map((rate) => new Date(rate.fetchedAt).toLocaleString()),
-    datasets: [
-      {
-        label: `USD to LKR Exchange Rate - ${AVAILABLE_BANKS.find(b => b.value === selectedBank)?.label || selectedBank}`,
-        data: chartHistory.map((rate) => rate.rate),
-        borderColor: "rgb(75, 192, 192)",
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
-        fill: true,
-      },
-    ],
+  // Calculate trend data based on selected period
+  const calculateTrend = () => {
+    if (history.length < 2) return { percentage: 0, period: `Last ${selectedPeriod}`, trend: 'up' as const };
+    
+    const current = history[history.length - 1]?.rate || 0;
+    const previous = history[0]?.rate || 0;
+    const percentage = ((current - previous) / previous) * 100;
+    
+    return {
+      percentage: Math.abs(percentage),
+      period: `Last ${selectedPeriod}`,
+      trend: percentage >= 0 ? 'up' as const : 'down' as const
+    };
   };
 
+  // Transform history data for table and chart
+  const tableData = history.map(item => ({
+    date: item.fetchedAt,
+    rate: item.rate
+  }));
+
+  const chartData = history.slice().reverse().map(item => ({
+    date: item.fetchedAt,
+    rate: item.rate
+  }));
+
   return (
-    <div className="max-w-5xl mx-auto p-8 text-center min-h-screen">
-      <h1 className="text-5xl font-bold leading-tight mb-4 text-white">USD to LKR Exchange Rate</h1>
-      
-      {/* Bank Selection Dropdown */}
-      <div className="mb-8">
-        <label htmlFor="bank-select" className="block text-xl font-semibold mb-4 text-white">
-          Select Bank:
-        </label>
-        <div className="flex items-center justify-center gap-4">
-          <select
-            id="bank-select"
-            value={selectedBank}
-            onChange={(e) => handleBankChange(e.target.value)}
-            className="bg-gray-800 border border-gray-600 text-white text-lg rounded-lg 
-                     focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block 
-                     w-64 p-3 transition-all duration-200 hover:border-gray-500"
-          >
-            {AVAILABLE_BANKS.map((bank) => (
-              <option key={bank.value} value={bank.value} className="bg-gray-800 text-white">
-                {bank.label}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 
-                     text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200
-                     focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          >
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
-        </div>
-      </div>
-
-      <h2 className="text-3xl font-semibold mb-8 text-white">
-        {AVAILABLE_BANKS.find(b => b.value === selectedBank)?.label || selectedBank}
-      </h2>
-      
-      {loading ? (
-        <div className="mb-8 p-8 bg-gray-800 rounded-lg shadow-lg border border-gray-700">
-          <p className="text-xl text-white">Loading...</p>
-        </div>
-      ) : latestRate ? (
-        <div className="mb-8 p-8 bg-gray-800 rounded-lg shadow-lg border border-gray-700">
-          <p className="text-xl mb-2 text-white">
-            <strong>Latest Rate:</strong> LKR {latestRate.rate.toFixed(2)}
-          </p>
-          <p className="text-xl text-white">
-            <strong>Fetched At:</strong>{" "}
-            {new Date(latestRate.fetchedAt).toLocaleString()}
-          </p>
-          {latestRate.bank && (
-            <p className="text-sm text-gray-300 mt-2">
-              Source: {latestRate.bank}
-            </p>
-          )}
-        </div>
-      ) : (
-        <p className="text-lg mb-8 text-white">Loading latest rate...</p>
-      )}
-
-      <h2 className="text-3xl font-semibold mb-6 text-white">History</h2>
-      <ul className="list-none mb-8 space-y-2 max-h-60 overflow-y-auto bg-gray-800 rounded-lg p-4 border border-gray-700">
-        {history.length > 0 ? (
-          history.map((rate, idx) => (
-            <li key={idx} className="text-gray-300 py-1 border-b border-gray-700 last:border-b-0">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold">LKR {rate.rate.toFixed(2)}</span>
-                <span className="text-sm">
-                  {new Date(rate.fetchedAt).toLocaleString()}
-                  {rate.bank && ` - ${rate.bank}`}
-                </span>
+    <div
+      className="relative flex size-full min-h-screen flex-col bg-[#f9fbf9] group/design-root overflow-x-hidden"
+      style={{
+        '--select-button-svg': `url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724px%27 height=%2724px%27 fill=%27rgb(99,145,85)%27 viewBox=%270 0 256 256%27%3e%3cpath d=%27M181.66,170.34a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-48-48a8,8,0,0,1,11.32-11.32L128,212.69l42.34-42.35A8,8,0,0,1,181.66,170.34Zm-96-84.68L128,43.31l42.34,42.35a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,85.66,85.66Z%27%3e%3c/path%3e%3c/svg%3e')`,
+        fontFamily: 'Manrope, "Noto Sans", sans-serif'
+      } as React.CSSProperties}
+    >
+      <div className="layout-container flex h-full grow flex-col">
+        <div className="px-20 md:px-40 flex flex-1 justify-center py-8">
+          <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
+            <div className="flex flex-wrap justify-between gap-3 p-4 pt-8">
+              <div className="flex flex-col gap-2">
+                <h1 className="text-[#121a0f] tracking-light text-[40px] font-bold leading-tight">
+                  USD to LKR Exchange Rates
+                </h1>
+                <p className="text-[#639155] text-lg font-medium">
+                  Real-time Currency Exchange
+                </p>
               </div>
-            </li>
-          ))
-        ) : (
-          <li className="text-gray-500 py-4">No history available for selected bank</li>
-        )}
-      </ul>
+            </div>
 
-      <h2 className="text-3xl font-semibold mb-6 text-white">Exchange Rate Chart</h2>
-      <div className="w-4/5 h-96 mx-auto mb-8 bg-gray-800 rounded-lg p-4 border border-gray-700">
-        <Line data={chartData} />
-      </div>
-      <footer className="mt-8 pt-4 text-center border-t border-gray-600">
-        <p className="mb-2 text-gray-300">Built by Chameera Rupasinghe</p>
-        <a 
-          href="https://github.com/chameerar/usd-lkr-exchange-rate-dashboard"
-          className="text-blue-400 hover:text-blue-300 transition-colors duration-200 inline-block mb-2 font-medium"
-        >
-          Source code
-        </a>
-        <div className="flex justify-center gap-4">
-          <a
-            href="https://github.com/chameerar"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-400 hover:text-white transition-colors duration-200"
-          >
-            <FaGithub size={24} />
-          </a>
-          <a
-            href="https://www.linkedin.com/in/chameerarupasinghe/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-400 hover:text-white transition-colors duration-200"
-          >
-            <FaLinkedin size={24} />
-          </a>
-          <a
-            href="https://chameerar.medium.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-400 hover:text-white transition-colors duration-200"
-          >
-            <FaMedium size={24} />
-          </a>
+            <div className="mb-8" style={{ marginBottom: '1em' }}>
+              <BankSelector
+                selectedBank={selectedBank}
+                onBankChange={handleBankChange}
+                banks={AVAILABLE_BANKS}
+              />
+            </div>
+            
+            
+            {loading ? (
+              <div className="flex justify-center items-center p-8">
+                <div className="text-[#639155] text-lg">Loading...</div>
+              </div>
+            ) : (
+              <>
+                {latestRate && (
+                  <div className="mb-8" style={{ marginBottom: '1em', borderRadius: '0.5rem' }}>
+                    <ExchangeRateCard rate={latestRate.rate} />
+                  </div>
+                )}
+                
+                <div className="mb-8">
+                  <TimePeriodSelector 
+                    selectedPeriod={selectedPeriod}
+                    onPeriodChange={handlePeriodChange}
+                  />
+                </div>
+                
+                <ExchangeRateTrend trendData={calculateTrend()} chartData={chartData} />
+                
+                <HistoricalDataTable data={tableData} />
+              </>
+            )}
+          </div>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }
