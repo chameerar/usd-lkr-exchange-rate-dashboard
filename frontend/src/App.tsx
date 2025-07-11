@@ -171,8 +171,8 @@ function App() {
   const calculateTrend = () => {
     if (history.length < 2) return { percentage: 0, period: `Last ${selectedPeriod}`, trend: 'up' as const };
     
-    const current = history[history.length - 1]?.rate || 0;
-    const previous = history[0]?.rate || 0;
+    const previous = history[history.length - 1]?.rate || 0;
+    const current = history[0]?.rate || 0;
     const percentage = ((current - previous) / previous) * 100;
     
     return {
@@ -231,7 +231,7 @@ function App() {
             ) : (
               <>
                 {latestRate && (
-                  <div className="mb-8" style={{ marginBottom: '1em', borderRadius: '0.5rem' }}>
+                  <div className="mb-8" style={{ marginBottom: '1em'}}>
                     <ExchangeRateCard rate={latestRate.rate} />
                   </div>
                 )}
