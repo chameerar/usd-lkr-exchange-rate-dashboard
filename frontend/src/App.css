@@ -179,7 +179,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  padding: 1rem;
+  padding: 0 1rem;
 }
 
 .exchange-rate-card__content {
@@ -226,7 +226,7 @@ body {
 =================== */
 .time-period-selector {
   display: flex;
-  padding: 0.75rem 1rem;
+  padding: 0 1rem;
 }
 
 .time-period-selector__container {
