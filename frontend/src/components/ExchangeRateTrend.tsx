@@ -38,9 +38,10 @@ interface ChartDataPoint {
 interface ExchangeRateTrendProps {
   trendData: TrendData;
   chartData: ChartDataPoint[];
+  isLoading?: boolean;
 }
 
-const ExchangeRateTrend: React.FC<ExchangeRateTrendProps> = ({ trendData, chartData }) => {
+const ExchangeRateTrend: React.FC<ExchangeRateTrendProps> = ({ trendData, chartData, isLoading = false }) => {
   // Prepare chart data
   const chartConfig = {
     labels: chartData.map(point => {
@@ -118,18 +119,42 @@ const ExchangeRateTrend: React.FC<ExchangeRateTrendProps> = ({ trendData, chartD
           Exchange Rate Trend
         </p>
         <p className="exchange-rate-trend__percentage">
-          {trendData.trend === 'up' ? '+' : ''}{trendData.percentage.toFixed(1)}%
+          {isLoading ? (
+            <span className="skeleton-text skeleton-text--large" style={{ display: 'inline-block', width: '120px', height: '2rem' }}>+0.0%</span>
+          ) : (
+            `${trendData.trend === 'up' ? '+' : ''}${trendData.percentage.toFixed(1)}%`
+          )}
         </p>
         <div className="exchange-rate-trend__details">
-          <p className="exchange-rate-trend__period">{trendData.period}</p>
+          <p className="exchange-rate-trend__period">
+            {isLoading ? (
+              <span className="skeleton-text" style={{ display: 'inline-block', width: '100px', height: '1rem' }}>Last Period</span>
+            ) : (
+              trendData.period
+            )}
+          </p>
           <p className={`exchange-rate-trend__change ${
             trendData.trend === 'up' ? 'exchange-rate-trend__change--up' : 'exchange-rate-trend__change--down'
           }`}>
-            {trendData.trend === 'up' ? '+' : ''}{trendData.percentage.toFixed(1)}%
+            {isLoading ? (
+              <span className="skeleton-text" style={{ display: 'inline-block', width: '60px', height: '1rem' }}>+0.0%</span>
+            ) : (
+              `${trendData.trend === 'up' ? '+' : ''}${trendData.percentage.toFixed(1)}%`
+            )}
           </p>
         </div>
         <div className="exchange-rate-trend__chart-container">
-          {chartData.length > 0 ? (
+          {isLoading ? (
+            <div className="exchange-rate-trend__chart-skeleton">
+              <div className="chart-skeleton">
+                <div className="chart-skeleton__bars">
+                  {Array.from({ length: 7 }).map((_, i) => (
+                    <div key={i} className="chart-skeleton__bar" style={{ height: `${Math.random() * 60 + 20}%` }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : chartData.length > 0 ? (
             <div className="exchange-rate-trend__chart">
               <Line data={chartConfig} options={chartOptions} />
             </div>

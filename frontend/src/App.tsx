@@ -43,7 +43,7 @@ function App() {
   const [history, setHistory] = useState<ExchangeRate[]>([]);
   const [selectedBank, setSelectedBank] = useState<string>(BANKS.SAMPATH);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('Week');
-  const [loading, setLoading] = useState<boolean>(false);
+  const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
   const backendUrl = window.configs?.backendUrl || 'http://localhost:8080';
 
   // Mock data for testing when backend is not available
@@ -68,7 +68,6 @@ function App() {
 
   const fetchLatestRate = async (bank?: string) => {
     try {
-      setLoading(true);
       const bankParam = bank ? `?bank=${bank}` : '';
       const res = await axios.get<ExchangeRate>(`${backendUrl}/latest-rate${bankParam}`);
       setLatestRate(res.data);
@@ -78,13 +77,12 @@ function App() {
       const mockData = generateMockData();
       setLatestRate(mockData[mockData.length - 1]);
     } finally {
-      setLoading(false);
+      setIsInitialLoad(false);
     }
   };
 
   const fetchHistoryWithPeriod = async (bank?: string, period?: TimePeriod) => {
     try {
-      setLoading(true);
       const params = new URLSearchParams();
       if (bank) params.append('bank', bank);
       if (period) params.append('period', period.toLowerCase());
@@ -100,7 +98,7 @@ function App() {
       const mockData = generateMockDataForPeriod(period || 'Month');
       setHistory(mockData);
     } finally {
-      setLoading(false);
+      setIsInitialLoad(false);
     }
   };
 
@@ -218,31 +216,30 @@ function App() {
               />
             </div>
             
+            <div className="section-spacing-compact">
+              <ExchangeRateCard 
+                rate={latestRate?.rate || 0} 
+                isLoading={isInitialLoad}
+              />
+            </div>
             
-            {loading ? (
-              <div className="loading-container">
-                <div className="loading-text">Loading...</div>
-              </div>
-            ) : (
-              <>
-                {latestRate && (
-                  <div className="section-spacing-compact">
-                    <ExchangeRateCard rate={latestRate.rate} />
-                  </div>
-                )}
-                
-                <div className="mb-8">
-                  <TimePeriodSelector 
-                    selectedPeriod={selectedPeriod}
-                    onPeriodChange={handlePeriodChange}
-                  />
-                </div>
-                
-                <ExchangeRateTrend trendData={calculateTrend()} chartData={chartData} />
-                
-                <HistoricalDataTable data={tableData} />
-              </>
-            )}
+            <div className="mb-8">
+              <TimePeriodSelector 
+                selectedPeriod={selectedPeriod}
+                onPeriodChange={handlePeriodChange}
+              />
+            </div>
+            
+            <ExchangeRateTrend 
+              trendData={calculateTrend()} 
+              chartData={chartData} 
+              isLoading={isInitialLoad}
+            />
+            
+            <HistoricalDataTable 
+              data={tableData} 
+              isLoading={isInitialLoad}
+            />
           </div>
         </div>
       </div>
