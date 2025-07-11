@@ -1,0 +1,724 @@
+/* App.css - Unified styling for the entire application */
+
+/* Global CSS Variables */
+:root {
+  --primary-color: #639155;
+  --primary-dark: #121a0f;
+  --primary-light: #ebf2e9;
+  --background-color: #f9fbf9;
+  --border-color: #d6e5d2;
+  --success-color: #078821;
+  --error-color: #d32f2f;
+  --shadow-light: 0 0 4px rgba(0, 0, 0, 0.1);
+  --font-family: 'Manrope', 'Noto Sans', sans-serif;
+  
+  /* Custom select button styling */
+  --select-button-svg: url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724px%27 height=%2724px%27 fill=%27rgb(99,145,85)%27 viewBox=%270 0 256 256%27%3e%3cpath d=%27M181.66,170.34a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-48-48a8,8,0,0,1,11.32-11.32L128,212.69l42.34-42.35A8,8,0,0,1,181.66,170.34Zm-96-84.68L128,43.31l42.34,42.35a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,85.66,85.66Z%27%3e%3c/path%3e%3c/svg%3e');
+}
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  margin: 0;
+  padding: 0;
+}
+
+/* ===================
+   APP CONTAINER
+=================== */
+.app-container {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  flex-direction: column;
+  background-color: var(--background-color);
+  overflow-x: hidden;
+  font-family: var(--font-family);
+}
+
+/* ===================
+   HEADER SECTION
+=================== */
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem;
+  padding-top: 2rem;
+}
+
+.app-header__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.app-header__title {
+  color: var(--primary-dark);
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  font-family: var(--font-family);
+  margin: 0;
+}
+
+.app-header__subtitle {
+  color: var(--primary-color);
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.5;
+  font-family: var(--font-family);
+  margin: 0;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.loading-text {
+  color: var(--primary-color);
+  font-size: 1.125rem;
+  font-weight: 400;
+}
+
+/* ===================
+   LAYOUT UTILITIES
+=================== */
+.section-spacing {
+  margin-bottom: 2rem;
+}
+
+.section-spacing-compact {
+  margin-bottom: 1rem;
+}
+
+.text-no-margin {
+  margin: 0;
+}
+
+.text-margin-compact {
+  margin-top: 0;
+  margin-bottom: 0.25em;
+}
+
+/* ===================
+   BANK SELECTOR
+=================== */
+.bank-selector {
+  display: flex;
+  max-width: 480px;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.bank-selector__label {
+  display: flex;
+  flex-direction: column;
+  min-width: 10rem;
+  flex: 1;
+}
+
+.bank-selector__select {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  resize: none;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  color: var(--primary-dark);
+  border: 1px solid var(--border-color);
+  background-color: var(--background-color);
+  background-image: var(--select-button-svg);
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.5rem;
+  height: 3.5rem;
+  padding: 0.9375rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  font-family: var(--font-family);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.bank-selector__select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(99, 145, 85, 0.2);
+}
+
+.bank-selector__select::placeholder {
+  color: var(--primary-color);
+}
+
+.bank-selector__select option {
+  background-color: var(--background-color);
+  color: var(--primary-dark);
+}
+
+/* ===================
+   EXCHANGE RATE CARD
+=================== */
+.exchange-rate-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.exchange-rate-card__content {
+  display: flex;
+  min-width: 158px;
+  flex: 1;
+  flex-direction: column;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  gap: 0.5rem;
+  background-color: var(--primary-light);
+  box-shadow: var(--shadow-light);
+}
+
+.exchange-rate-card__label {
+  color: var(--primary-color);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: var(--font-family);
+  margin: 0;
+}
+
+.exchange-rate-card__rate {
+  color: var(--primary-dark);
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  font-family: var(--font-family);
+  margin: 0 0 0.25em 0;
+}
+
+.exchange-rate-card__currency {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* ===================
+   TIME PERIOD SELECTOR
+=================== */
+.time-period-selector {
+  display: flex;
+  padding: 0.75rem 1rem;
+}
+
+.time-period-selector__container {
+  display: flex;
+  height: 2.5rem;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background-color: var(--primary-light);
+  padding: 0.25rem;
+}
+
+.time-period-selector__option {
+  display: flex;
+  cursor: pointer;
+  height: 100%;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  transition: all 0.2s ease-in-out;
+  color: var(--primary-color);
+  background-color: transparent;
+  border: none;
+  outline: none;
+}
+
+.time-period-selector__option--active {
+  background-color: var(--background-color);
+  box-shadow: var(--shadow-light);
+  color: var(--primary-dark);
+}
+
+.time-period-selector__option:hover:not(.time-period-selector__option--active) {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.time-period-selector__text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.time-period-selector__input {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* ===================
+   EXCHANGE RATE TREND
+=================== */
+.exchange-rate-trend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.exchange-rate-trend__content {
+  display: flex;
+  min-width: 18rem;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.exchange-rate-trend__title {
+  color: var(--primary-dark);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.exchange-rate-trend__percentage {
+  color: var(--primary-dark);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  margin: 0;
+  word-break: break-word;
+}
+
+.exchange-rate-trend__details {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.exchange-rate-trend__period {
+  color: var(--primary-color);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.exchange-rate-trend__change {
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.exchange-rate-trend__change--up {
+  color: var(--success-color);
+}
+
+.exchange-rate-trend__change--down {
+  color: var(--error-color);
+}
+
+.exchange-rate-trend__chart-container {
+  display: flex;
+  min-height: 180px;
+  flex: 1;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1rem 0;
+}
+
+.exchange-rate-trend__chart {
+  height: 148px;
+  width: 100%;
+}
+
+.exchange-rate-trend__no-data {
+  height: 148px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+/* ===================
+   HISTORICAL DATA TABLE
+=================== */
+.historical-data-table {
+  padding: 0.75rem 1rem;
+}
+
+.historical-data-table__title {
+  color: var(--primary-dark);
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  padding-bottom: 0.75rem;
+  padding-top: 1.25rem;
+  margin: 0;
+}
+
+.historical-data-table__container {
+  display: flex;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-color);
+  overflow-x: auto;
+}
+
+.historical-data-table__table {
+  flex: 1;
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 400px;
+}
+
+.historical-data-table__header {
+  background-color: var(--background-color);
+}
+
+.historical-data-table__header-cell {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  color: var(--primary-dark);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.historical-data-table__row {
+  border-top: 1px solid var(--border-color);
+}
+
+.historical-data-table__cell {
+  height: 72px;
+  padding: 0.5rem 1rem;
+  color: var(--primary-color);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.historical-data-table__cell--center {
+  text-align: center;
+}
+
+.historical-data-table__no-data {
+  color: var(--primary-color);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* ===================
+   RESPONSIVE DESIGN
+=================== */
+
+/* Large screens (1200px and up) */
+@media (min-width: 1200px) {
+  .app-container {
+    padding: 0 2rem;
+  }
+}
+
+/* Medium screens (768px to 1199px) */
+@media (max-width: 1199px) {
+  .exchange-rate-card__content {
+    padding: 1.5rem;
+  }
+  
+  .exchange-rate-trend {
+    padding: 1rem;
+  }
+  
+  .exchange-rate-trend__content {
+    min-width: 100%;
+  }
+}
+
+/* Small screens (576px to 767px) */
+@media (max-width: 767px) {
+  .app-container .px-20 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .app-container .md\:px-40 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .section-spacing {
+    margin-bottom: 1.5rem;
+  }
+  
+  .section-spacing-compact {
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Header */
+  .app-header {
+    padding: 0.75rem;
+    padding-top: 1.5rem;
+  }
+  
+  .app-header__title {
+    font-size: 2rem;
+  }
+  
+  .app-header__subtitle {
+    font-size: 1rem;
+  }
+  
+  /* Bank Selector */
+  .bank-selector {
+    max-width: 100%;
+    padding: 0.5rem;
+  }
+  
+  .bank-selector__label {
+    min-width: 100%;
+  }
+  
+  .bank-selector__select {
+    height: 3rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Exchange Rate Card */
+  .exchange-rate-card {
+    padding: 0.5rem;
+  }
+  
+  .exchange-rate-card__content {
+    padding: 1.5rem;
+  }
+  
+  .exchange-rate-card__rate {
+    font-size: 2.5rem;
+  }
+  
+  .exchange-rate-card__currency {
+    font-size: 1.5rem;
+  }
+  
+  /* Time Period Selector */
+  .time-period-selector {
+    padding: 0.5rem;
+  }
+  
+  .time-period-selector__container {
+    height: 2.25rem;
+  }
+  
+  .time-period-selector__option {
+    font-size: 0.8rem;
+    padding: 0 0.25rem;
+  }
+  
+  /* Exchange Rate Trend */
+  .exchange-rate-trend {
+    padding: 1rem 0.5rem;
+  }
+  
+  .exchange-rate-trend__percentage {
+    font-size: 1.75rem;
+  }
+  
+  .exchange-rate-trend__chart-container {
+    min-height: 140px;
+  }
+  
+  .exchange-rate-trend__chart,
+  .exchange-rate-trend__no-data {
+    height: 120px;
+  }
+  
+  /* Historical Data Table */
+  .historical-data-table {
+    padding: 0.5rem;
+  }
+  
+  .historical-data-table__title {
+    font-size: 1.25rem;
+  }
+  
+  .historical-data-table__header-cell,
+  .historical-data-table__cell {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .historical-data-table__cell {
+    height: 60px;
+  }
+}
+
+/* Extra small screens (575px and below) */
+@media (max-width: 575px) {
+  .app-container .py-8 {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  
+  .app-container h1 {
+    font-size: 1.75rem !important;
+  }
+  
+  .app-container .text-lg {
+    font-size: 1rem !important;
+  }
+  
+  .section-spacing {
+    margin-bottom: 1rem;
+  }
+  
+  .section-spacing-compact {
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Header */
+  .app-header {
+    padding: 0.5rem;
+    padding-top: 1rem;
+  }
+  
+  .app-header__title {
+    font-size: 1.75rem;
+  }
+  
+  .app-header__subtitle {
+    font-size: 0.875rem;
+  }
+  
+  /* Bank Selector */
+  .bank-selector {
+    padding: 0.25rem;
+  }
+  
+  .bank-selector__select {
+    height: 2.75rem;
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
+  
+  /* Exchange Rate Card */
+  .exchange-rate-card {
+    padding: 0.25rem;
+  }
+  
+  .exchange-rate-card__content {
+    padding: 1rem;
+  }
+  
+  .exchange-rate-card__rate {
+    font-size: 2rem;
+  }
+  
+  .exchange-rate-card__currency {
+    font-size: 1.25rem;
+  }
+  
+  /* Time Period Selector */
+  .time-period-selector {
+    padding: 0.25rem;
+  }
+  
+  .time-period-selector__container {
+    height: 2rem;
+  }
+  
+  .time-period-selector__option {
+    font-size: 0.75rem;
+    padding: 0 0.125rem;
+  }
+  
+  /* Exchange Rate Trend */
+  .exchange-rate-trend {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .exchange-rate-trend__percentage {
+    font-size: 1.5rem;
+  }
+  
+  .exchange-rate-trend__details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.125rem;
+  }
+  
+  .exchange-rate-trend__chart-container {
+    min-height: 120px;
+  }
+  
+  .exchange-rate-trend__chart,
+  .exchange-rate-trend__no-data {
+    height: 100px;
+  }
+  
+  /* Historical Data Table */
+  .historical-data-table {
+    padding: 0.25rem;
+  }
+  
+  .historical-data-table__title {
+    font-size: 1.125rem;
+  }
+  
+  .historical-data-table__header-cell,
+  .historical-data-table__cell {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .historical-data-table__cell {
+    height: 48px;
+  }
+  
+  .historical-data-table__table {
+    min-width: 300px;
+  }
+}

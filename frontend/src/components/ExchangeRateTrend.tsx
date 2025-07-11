@@ -112,27 +112,29 @@ const ExchangeRateTrend: React.FC<ExchangeRateTrendProps> = ({ trendData, chartD
   } as const;
 
   return (
-    <div className="flex flex-wrap gap-4 px-4 py-6">
-      <div className="flex min-w-72 flex-1 flex-col gap-2">
-        <p className="text-[#121a0f] text-base font-medium leading-normal">Exchange Rate Trend</p>
-        <p className="text-[#121a0f] tracking-light text-[32px] font-bold leading-tight truncate">
+    <div className="exchange-rate-trend">
+      <div className="exchange-rate-trend__content">
+        <p className="exchange-rate-trend__title">
+          Exchange Rate Trend
+        </p>
+        <p className="exchange-rate-trend__percentage">
           {trendData.trend === 'up' ? '+' : ''}{trendData.percentage.toFixed(1)}%
         </p>
-        <div className="flex gap-1">
-          <p className="text-[#639155] text-base font-normal leading-normal">{trendData.period}</p>
-          <p className={`text-base font-medium leading-normal ${
-            trendData.trend === 'up' ? 'text-[#078821]' : 'text-[#d32f2f]'
+        <div className="exchange-rate-trend__details">
+          <p className="exchange-rate-trend__period">{trendData.period}</p>
+          <p className={`exchange-rate-trend__change ${
+            trendData.trend === 'up' ? 'exchange-rate-trend__change--up' : 'exchange-rate-trend__change--down'
           }`}>
             {trendData.trend === 'up' ? '+' : ''}{trendData.percentage.toFixed(1)}%
           </p>
         </div>
-        <div className="flex min-h-[180px] flex-1 flex-col gap-8 py-4">
+        <div className="exchange-rate-trend__chart-container">
           {chartData.length > 0 ? (
-            <div className="h-[148px] w-full">
+            <div className="exchange-rate-trend__chart">
               <Line data={chartConfig} options={chartOptions} />
             </div>
           ) : (
-            <div className="h-[148px] w-full flex items-center justify-center text-[#639155]">
+            <div className="exchange-rate-trend__no-data">
               No chart data available
             </div>
           )}
